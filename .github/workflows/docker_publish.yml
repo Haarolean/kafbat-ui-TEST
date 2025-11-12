@@ -90,22 +90,31 @@ jobs:
         run: |
           registry="${{ matrix.registry }}"
           repository_override="${{ inputs.repository }}"
+          repo_value=""
 
           if [ "$registry" == "ecr" ]; then
+          if [ "$registry" = "ecr" ]; then
             echo "REGISTRY=${{ vars.ECR_REGISTRY }}" >> $GITHUB_ENV
             if [ -n "$repository_override" ]; then
               echo "REPOSITORY=$repository_override" >> $GITHUB_ENV
+              repo_value="$repository_override"
             else
               echo "REPOSITORY=$(basename ${{ github.repository }})" >> $GITHUB_ENV
+              repo_value="$(basename "${{ github.repository }}")"
             fi
           else
             echo "REGISTRY=$registry" >> $GITHUB_ENV
             if [ -n "$repository_override" ]; then
               echo "REPOSITORY=$repository_override" >> $GITHUB_ENV
+              repo_value="$repository_override"
             else
               echo "REPOSITORY=${{ github.repository }}" >> $GITHUB_ENV
+              repo_value="${{ github.repository }}"
             fi
+            repo_value="$(printf '%s' "$repo_value" | tr '[:upper:]' '[:lower:]')"
           fi
+
+          echo "REPOSITORY=$repo_value" >> $GITHUB_ENV
 
       - name: Push images to ${{ matrix.registry }}
         run: |
@@ -113,3 +122,4 @@ jobs:
           docker tag kafka-ui:temp ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ inputs.version }}
           docker push ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ inputs.generic_tag }}
           docker push ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ inputs.version }}
+
